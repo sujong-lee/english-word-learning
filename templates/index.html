@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세인이의 영단어 학습</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background-color: #00BCD4;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            padding-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .score-board {
+            background: white;
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr) 80px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .score-item {
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        .score-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .correct-score {
+            color: #4CAF50;
+            border-right: 1px solid #eee;
+        }
+
+        .incorrect-score {
+            color: #f44336;
+            border-right: 1px solid #eee;
+        }
+
+        .accuracy-score {
+            color: #2196F3;
+        }
+
+        .reset-score {
+            background: #666;
+            font-size: 0.8em;
+            padding: 8px 12px;
+            height: fit-content;
+            align-self: center;
+            white-space: nowrap;
+            width: 80px;
+        }
+
+        .reset-score:hover {
+            background: #555;
+        }
+
+        @media (max-width: 600px) {
+            .score-board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .reset-score {
+                grid-column: 2 / 3;
+                width: 100%;
+            }
+        }
+
+        .word-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            text-align: center;
+        }
+
+        .word-type {
+            color: #00BCD4;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-label {
+            display: block;
+            text-align: left;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: #008ba3;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #006d80;
+        }
+
+        .result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        .correct {
+            color: #4CAF50;
+        }
+
+        .incorrect {
+            color: #f44336;
+        }
+
+        .admin-link {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+
+        .admin-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="width: 100px;"></div>
+            <h1>세인이의 영단어 학습</h1>
+            <a href="/admin" class="admin-link">단어 관리</a>
+        </div>
+        
+        <div class="score-board">
+            <div class="score-item">
+                <div class="score-label">정답</div>
+                <div class="score-value correct-score" id="correctScore">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">오답</div>
+                <div class="score-value incorrect-score" id="incorrectScore">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">정답률</div>
+                <div class="score-value accuracy-score" id="accuracyScore">0%</div>
+            </div>
+            <button class="reset-score" onclick="resetScores()">초기화</button>
+        </div>
+        
+        <!-- 오디오 요소 추가 -->
+        <audio id="correctSound" preload="auto">
+            <source src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg" type="audio/ogg">
+        </audio>
+        <audio id="incorrectSound" preload="auto">
+            <source src="https://actions.google.com/sounds/v1/cartoon/cartoon_cowbell.ogg" type="audio/ogg">
+        </audio>
+        
+        <div class="word-container">
+            <button class="speak-button" onclick="speakWord()" title="발음 듣기">
+                <i class="fas fa-volume-up"></i>
+            </button>
+            <div class="word-type" id="wordType"></div>
+            <div style="font-size: 1.2em; color: #666;">
+                발음을 듣고 단어와 뜻을 입력하세요
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="input-group">
+                <label class="input-label">영어 스펠링:</label>
+                <input type="text" id="answer" placeholder="영어 단어를 입력하세요" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label class="input-label">한글 뜻:</label>
+                <input type="text" id="meaning" placeholder="단어의 뜻을 입력하세요" autocomplete="off">
+            </div>
+            <button onclick="checkAnswer()">정답 확인</button>
+            <button onclick="getNewWord()" style="margin-top: 10px; background: #4CAF50;">다음 단어</button>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        let currentWord = '';
+        let currentMeaning = '';
+        let hasCountedIncorrect = false;  // 현재 단어의 오답 카운트 여부
+        const synth = window.speechSynthesis;
+
+        // 점수 관리
+        let scores = {
+            correct: parseInt(localStorage.getItem('correctScore') || '0'),
+            incorrect: parseInt(localStorage.getItem('incorrectScore') || '0')
+        };
+
+        function updateScoreDisplay() {
+            document.getElementById('correctScore').textContent = scores.correct;
+            document.getElementById('incorrectScore').textContent = scores.incorrect;
+            
+            const total = scores.correct + scores.incorrect;
+            const accuracy = total > 0 ? Math.round((scores.correct / total) * 100) : 0;
+            document.getElementById('accuracyScore').textContent = `${accuracy}%`;
+
+            // 로컬 스토리지에 저장
+            localStorage.setItem('correctScore', scores.correct);
+            localStorage.setItem('incorrectScore', scores.incorrect);
+        }
+
+        function resetScores() {
+            scores.correct = 0;
+            scores.incorrect = 0;
+            updateScoreDisplay();
+            // 결과 메시지도 함께 초기화
+            document.getElementById('result').textContent = '';
+        }
+
+        // 페이지 로드시 점수 표시 업데이트
+        updateScoreDisplay();
+
+        function speakWord() {
+            if (!currentWord) return;
+            
+            // 이전 음성이 재생 중이면 중지
+            synth.cancel();
+
+            // 결과 메시지 삭제
+            document.getElementById('result').textContent = '';
+
+            const utterance = new SpeechSynthesisUtterance(currentWord);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            synth.speak(utterance);
+        }
+
+        function getNewWord() {
+            fetch('/get_word')
+                .then(response => response.json())
+                .then(data => {
+                    currentWord = data.word;
+                    currentMeaning = data.meaning;
+                    hasCountedIncorrect = false;  // 새 단어로 변경시 초기화
+                    document.getElementById('wordType').textContent = data.type;
+                    document.getElementById('answer').value = '';
+                    document.getElementById('meaning').value = '';
+                    // 자동으로 발음 재생
+                    speakWord();
+                });
+        }
+
+        function checkAnswer() {
+            const answer = document.getElementById('answer').value.toLowerCase();
+            const meaning = document.getElementById('meaning').value;
+            
+            fetch('/check_answer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    answer: answer,
+                    meaning: meaning,
+                    word: currentWord,
+                    correct_meaning: currentMeaning
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultElement = document.getElementById('result');
+                if (data.correct) {
+                    document.getElementById('correctSound').play()
+                        .catch(e => console.log('효과음 재생 실패:', e));
+                    resultElement.textContent = '정답입니다! 👏';
+                    resultElement.className = 'result correct';
+                    scores.correct++;
+                    
+                    // 정답인 경우에만 1초 후 다음 단어로 이동
+                    setTimeout(() => {
+                        getNewWord();
+                    }, 1000);
+                } else {
+                    document.getElementById('incorrectSound').play()
+                        .catch(e => console.log('효과음 재생 실패:', e));
+                    resultElement.textContent = `틀렸습니다.\n정답: ${data.correct_answer} - ${data.correct_meaning}`;
+                    resultElement.className = 'result incorrect';
+                    
+                    // 현재 단어의 첫 오답인 경우에만 카운트
+                    if (!hasCountedIncorrect) {
+                        scores.incorrect++;
+                        hasCountedIncorrect = true;
+                    }
+                    
+                    // 오답인 경우 입력 필드만 초기화
+                    document.getElementById('answer').value = '';
+                    document.getElementById('meaning').value = '';
+                }
+                updateScoreDisplay();
+            });
+        }
+
+        // Enter 키로 정답 제출 (마지막 입력 필드에서)
+        document.getElementById('meaning').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        // 페이지 로드시 첫 단어 가져오기
+        getNewWord();
+    </script>
+</body>
+</html> 

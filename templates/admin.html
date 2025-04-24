@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>단어 관리</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .word-form {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #00BCD4;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #008ba3;
+        }
+
+        .word-list {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .word-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .word-item:last-child {
+            border-bottom: none;
+        }
+
+        .word-info {
+            flex-grow: 1;
+        }
+
+        .delete-btn {
+            background: #f44336;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            background: #d32f2f;
+        }
+
+        .back-btn {
+            background: #666;
+            text-decoration: none;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .back-btn:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="back-btn">← 학습으로 돌아가기</a>
+            <h1>단어 관리</h1>
+            <div style="width: 100px;"></div>
+        </div>
+
+        <div class="word-form">
+            <h2>새 단어 추가</h2>
+            <div class="form-group">
+                <label>영어 단어:</label>
+                <input type="text" id="word" placeholder="예: happy">
+            </div>
+            <div class="form-group">
+                <label>품사:</label>
+                <input type="text" id="type" placeholder="예: adj">
+            </div>
+            <div class="form-group">
+                <label>뜻 (쉼표로 구분):</label>
+                <input type="text" id="meaning" placeholder="예: 행복한, 기쁜">
+            </div>
+            <button onclick="addWord()">단어 추가</button>
+        </div>
+
+        <div class="word-list" id="wordList">
+            <!-- 단어 목록이 여기에 동적으로 추가됩니다 -->
+        </div>
+    </div>
+
+    <script>
+        // 단어 목록 로드
+        function loadWords() {
+            fetch('/api/words')
+                .then(response => response.json())
+                .then(words => {
+                    const wordList = document.getElementById('wordList');
+                    wordList.innerHTML = '<h2>단어 목록</h2>';
+                    
+                    Object.entries(words).forEach(([word, info]) => {
+                        const wordItem = document.createElement('div');
+                        wordItem.className = 'word-item';
+                        wordItem.innerHTML = `
+                            <div class="word-info">
+                                <strong>${word}</strong> [${info[0]}] - ${info[1]}
+                            </div>
+                            <button class="delete-btn" onclick="deleteWord('${word}')">삭제</button>
+                        `;
+                        wordList.appendChild(wordItem);
+                    });
+                });
+        }
+
+        // 새 단어 추가
+        function addWord() {
+            const word = document.getElementById('word').value.trim();
+            const type = document.getElementById('type').value.trim();
+            const meaning = document.getElementById('meaning').value.trim();
+
+            if (!word || !type || !meaning) {
+                alert('모든 필드를 입력해주세요.');
+                return;
+            }
+
+            fetch('/api/words', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ word, type, meaning })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // 입력 필드 초기화
+                    document.getElementById('word').value = '';
+                    document.getElementById('type').value = '';
+                    document.getElementById('meaning').value = '';
+                    // 단어 목록 새로고침
+                    loadWords();
+                }
+            });
+        }
+
+        // 단어 삭제
+        function deleteWord(word) {
+            if (!confirm(`"${word}" 단어를 삭제하시겠습니까?`)) {
+                return;
+            }
+
+            fetch(`/api/words/${word}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    loadWords();
+                }
+            });
+        }
+
+        // 페이지 로드시 단어 목록 로드
+        loadWords();
+    </script>
+</body>
+</html> 
