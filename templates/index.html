@@ -46,7 +46,7 @@
             </button>
             <div class="word-type" id="wordType"></div>
             <div style="font-size: 1.2em; color: #666;">
-                발음을 듣고 단어와 뜻을 입력하세요
+                발음 듣기 버튼을 클릭하고 단어와 뜻을 입력하세요
             </div>
         </div>
 
@@ -70,7 +70,8 @@
         let currentWord = '';
         let currentMeaning = '';
         let hasCountedIncorrect = false;  // 현재 단어의 오답 카운트 여부
-        const synth = window.speechSynthesis;
+        let audio = new Audio();  // 오디오 객체 생성
+        let isFirstLoad = true;  // 첫 로드 여부
 
         // 점수 관리
         let scores = {
@@ -105,16 +106,19 @@
         function speakWord() {
             if (!currentWord) return;
             
-            // 이전 음성이 재생 중이면 중지
-            synth.cancel();
-
+            // 이전 오디오 중지
+            audio.pause();
+            audio.currentTime = 0;
+            
             // 결과 메시지 삭제
             document.getElementById('result').textContent = '';
-
-            const utterance = new SpeechSynthesisUtterance(currentWord);
-            utterance.lang = 'en-US';
-            utterance.rate = 0.9;
-            synth.speak(utterance);
+            
+            // 서버에서 오디오 가져오기
+            audio.src = `/speak/${currentWord}`;
+            audio.play().catch(e => {
+                console.log('오디오 재생 실패:', e);
+                alert('오디오 재생에 실패했습니다. 다시 시도해주세요.');
+            });
         }
 
         function getNewWord() {
@@ -127,8 +131,13 @@
                     document.getElementById('wordType').textContent = data.type;
                     document.getElementById('answer').value = '';
                     document.getElementById('meaning').value = '';
-                    // 자동으로 발음 재생
-                    speakWord();
+                    
+                    // 첫 로드가 아닌 경우에만 발음 재생
+                    if (!isFirstLoad) {
+                        speakWord();
+                    } else {
+                        isFirstLoad = false;
+                    }
                 });
         }
 

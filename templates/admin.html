@@ -106,6 +106,15 @@
             background: #d32f2f;
         }
 
+        .edit-btn {
+            background: #FFC107;
+            margin-left: 10px;
+        }
+
+        .edit-btn:hover {
+            background: #FFA000;
+        }
+
         .back-btn {
             background: #666;
             text-decoration: none;
@@ -117,6 +126,36 @@
 
         .back-btn:hover {
             background: #555;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -150,7 +189,30 @@
         </div>
     </div>
 
+    <!-- 수정 모달 -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h2>단어 수정</h2>
+            <div class="form-group">
+                <label>영어 단어:</label>
+                <input type="text" id="editWord" readonly>
+            </div>
+            <div class="form-group">
+                <label>품사:</label>
+                <input type="text" id="editType">
+            </div>
+            <div class="form-group">
+                <label>뜻 (쉼표로 구분):</label>
+                <input type="text" id="editMeaning">
+            </div>
+            <button onclick="updateWord()">수정 완료</button>
+        </div>
+    </div>
+
     <script>
+        let currentEditWord = '';
+
         // 단어 목록 로드
         function loadWords() {
             fetch('/api/words')
@@ -166,6 +228,7 @@
                             <div class="word-info">
                                 <strong>${word}</strong> [${info[0]}] - ${info[1]}
                             </div>
+                            <button class="edit-btn" onclick="openEditModal('${word}', '${info[0]}', '${info[1]}')">수정</button>
                             <button class="delete-btn" onclick="deleteWord('${word}')">삭제</button>
                         `;
                         wordList.appendChild(wordItem);
@@ -220,6 +283,48 @@
                 if (data.error) {
                     alert(data.error);
                 } else {
+                    loadWords();
+                }
+            });
+        }
+
+        // 수정 모달 열기
+        function openEditModal(word, type, meaning) {
+            currentEditWord = word;
+            document.getElementById('editWord').value = word;
+            document.getElementById('editType').value = type;
+            document.getElementById('editMeaning').value = meaning;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // 수정 모달 닫기
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // 단어 수정
+        function updateWord() {
+            const type = document.getElementById('editType').value.trim();
+            const meaning = document.getElementById('editMeaning').value.trim();
+
+            if (!type || !meaning) {
+                alert('모든 필드를 입력해주세요.');
+                return;
+            }
+
+            fetch(`/api/words/${currentEditWord}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ type, meaning })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    closeEditModal();
                     loadWords();
                 }
             });
